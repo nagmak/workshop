@@ -1,5 +1,6 @@
 # Go Toronto Workshop
 
+[Original Repo](https://github.com/gotoronto/workshop)
 This is a workshop to teach new people Go
 
 ## Slides
