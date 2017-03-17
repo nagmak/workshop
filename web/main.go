@@ -76,10 +76,18 @@ func create(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, r, err.Error()) // Notify user of error if the JSON is invalid
 		return
 	}
+
 	// Make sure todo.Task is not blank
 	// Set todo.ID to the length of todos
 	// Add it to the list of todos
 	// Render back the created Todo
+
+	if len(todo.Task) != 0 {
+		todo.ID = len(todos)
+		todos = append(todos, todo)
+		return
+	}
+	render.JSON(w, r, todo)
 }
 
 func show(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +104,7 @@ func show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.JSON(w, r, todo) // Render the task
+	render.JSON(w, r, todo.Task) // Render the task
 }
 
 func update(w http.ResponseWriter, r *http.Request) {
@@ -111,6 +119,26 @@ func update(w http.ResponseWriter, r *http.Request) {
 	// Update todo.Task if updatedTodo.Task is not blank
 	// Update todo.Done from updatedTodo.Done
 	// Render back the updated Todo
+	idStr := chi.URLParam(r, "todoID")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {                    // If we can't convert it then notify the user of an error
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	todo := findTodo(id)
+	if todo == nil {
+		http.Error(w, http.StatusText(404), 404)
+		return
+	}
+
+	if len(updatedTodo.Task) != 0{
+		todo.Task = updatedTodo.Task
+	}
+	todo.Done = updatedTodo.Done
+
+	render.JSON(w, r, todo)
+
 }
 
 func deleteTodo(w http.ResponseWriter, r *http.Request) {
@@ -119,4 +147,29 @@ func deleteTodo(w http.ResponseWriter, r *http.Request) {
 	// Find the index of the task in todos by the todo.ID
 	// Remove the task from todos (For deleting from a slice check: https://github.com/golang/go/wiki/SliceTricks)
 	// Render back out the task
+
+	idStr := chi.URLParam(r, "todoID")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {                    // If we can't convert it then notify the user of an error
+		http.Error(w, http.StatusText(500), 500)
+		return
+	}
+
+	todo := findTodo(id)
+	if todo == nil {
+		http.Error(w, http.StatusText(404), 404)
+		return
+	}
+
+	index := todo.ID
+
+	for td := range todos{
+		if td == index {
+			copy(todos[td:], todos[td+1:])
+			todos[len(todos)-1] = nil
+			todos = todos[:len(todos)-1]
+		}
+	}
+
+	render.JSON(w, r, todo.Task)
 }
